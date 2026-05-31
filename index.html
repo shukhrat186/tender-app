@@ -3,30 +3,114 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Тендер Платформа | ХМАО</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<title>Тендер Платформа | Ачилов</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-:root {
-  --bg: #0A0A0A; --card: #111; --card2: #161616; --border: #222;
-  --accent: #FF5C00; --green: #00C896; --blue: #3B82F6;
-  --yellow: #F59E0B; --red: #EF4444; --purple: #A855F7;
-  --text: #F0F0F0; --muted: #555; --muted2: #2a2a2a;
-}
-body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Mono', monospace; min-height: 100vh; }
-button { cursor: pointer; font-family: inherit; }
-input, textarea, select { font-family: inherit; }
-.header { border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-.logo-title { font-size: 14px; font-weight: 700; color: var(--accent); letter-spacing: .05em; }
-.logo-sub { font-size: 10px; color: var(--muted); letter-spacing: .1em; margin-top: 2px; }
-.stats { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
-.stat { text-align: center; }
-.stat-val { font-size: 15px; font-weight: 700; }
-.stat-lbl { font-size: 9px; color: var(--muted); letter-spacing: .1em; }
-.btn-add { background: #FF5C0022; border: 1px solid var(--accent); color: var(--accent); padding: 6px 16px; border-radius: 6px; font-size: 12px; font-weight: 700; }
-.tabs { border-bottom: 1px solid var(--border); padding: 0 20px; display: flex; }
-.tab { background: none; border: none; border-bottom: 2px solid transparent; padding: 12px 16px; font-size: 12px; font-weight: 600; letter-spacing: .05em; color: var(--muted); transition: .15s; }
-.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-.kanban { overflow-x: auto; padding: 16px; }
-.kanban-inner { display: flex; gap: 12px; min-width: max-content; }
-.col
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:#0f1115; color:#e8eaed; min-height:100vh; padding:16px;
+  }
+  header { margin-bottom:18px; }
+  h1 { font-size:20px; font-weight:700; }
+  .sub { color:#8b9099; font-size:13px; margin-top:4px; }
+  .add {
+    width:100%; margin:14px 0; padding:14px; border:none; border-radius:12px;
+    background:#3b82f6; color:#fff; font-size:15px; font-weight:600; cursor:pointer;
+  }
+  .add:active { background:#2563eb; }
+  .col { margin-bottom:20px; }
+  .col-title { font-size:13px; font-weight:700; text-transform:uppercase; color:#8b9099; margin-bottom:8px; letter-spacing:.5px; }
+  .card {
+    background:#1a1d24; border:1px solid #262a33; border-radius:12px;
+    padding:14px; margin-bottom:10px;
+  }
+  .card-name { font-weight:600; font-size:15px; }
+  .card-meta { color:#8b9099; font-size:13px; margin-top:6px; }
+  .card-price { color:#34d399; font-weight:700; margin-top:6px; }
+  .actions { display:flex; gap:8px; margin-top:10px; }
+  .btn {
+    flex:1; padding:8px; border:none; border-radius:8px; font-size:13px;
+    font-weight:600; cursor:pointer; background:#262a33; color:#e8eaed;
+  }
+  .btn.move { background:#3b82f6; color:#fff; }
+  .btn.del { background:#3a1c1c; color:#f87171; flex:0 0 44px; }
+  .empty { color:#5a606b; font-size:13px; padding:8px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Тендер Платформа</h1>
+  <div class="sub">Ачилов Б.Э. · клининг + ремонт · ХМАО</div>
+</header>
+
+<button class="add" onclick="addTender()">+ Добавить тендер</button>
+
+<div id="board"></div>
+
+<script>
+  if (window.Telegram && window.Telegram.WebApp) {
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
+  }
+
+  const STAGES = ["Новые", "В работе", "Подано", "Выиграно"];
+  let tenders = [
+    { id:1, name:"Уборка администрации", price:"180 000 ₽", date:"до 10.06", stage:0 },
+    { id:2, name:"Ремонт школы №3", price:"940 000 ₽", date:"до 15.06", stage:1 }
+  ];
+
+  function render() {
+    const board = document.getElementById("board");
+    board.innerHTML = "";
+    STAGES.forEach((stage, si) => {
+      const col = document.createElement("div");
+      col.className = "col";
+      col.innerHTML = '<div class="col-title">' + stage + '</div>';
+      const items = tenders.filter(t => t.stage === si);
+      if (items.length === 0) {
+        col.innerHTML += '<div class="empty">пусто</div>';
+      }
+      items.forEach(t => {
+        const c = document.createElement("div");
+        c.className = "card";
+        let btns = '';
+        if (si < STAGES.length - 1) {
+          btns = '<button class="btn move" onclick="move(' + t.id + ')">→ дальше</button>';
+        }
+        c.innerHTML =
+          '<div class="card-name">' + t.name + '</div>' +
+          '<div class="card-meta">' + t.date + '</div>' +
+          '<div class="card-price">' + t.price + '</div>' +
+          '<div class="actions">' + btns +
+          '<button class="btn del" onclick="del(' + t.id + ')">✕</button></div>';
+        col.appendChild(c);
+      });
+      board.appendChild(col);
+    });
+  }
+
+  function addTender() {
+    const name = prompt("Название тендера:");
+    if (!name) return;
+    const price = prompt("Сумма (например 250 000 ₽):") || "—";
+    const date = prompt("Срок (например до 20.06):") || "—";
+    tenders.push({ id:Date.now(), name:name, price:price, date:date, stage:0 });
+    render();
+  }
+
+  function move(id) {
+    const t = tenders.find(x => x.id === id);
+    if (t && t.stage < STAGES.length - 1) t.stage++;
+    render();
+  }
+
+  function del(id) {
+    tenders = tenders.filter(x => x.id !== id);
+    render();
+  }
+
+  render();
+</script>
+</body>
+</html>
